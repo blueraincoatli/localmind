@@ -28,7 +28,7 @@ class Config:
     
     # Ollama 配置
     ollama_base: str = "http://localhost:11434"
-    embed_model: str = "nomic-embed-text"
+    embed_model: str = "bge-m3:latest"
     
     # 召回参数
     recall_top_k: int = 5

@@ -38,10 +38,10 @@ def test_recall_engine_init():
 def test_recall_single_query():
     print("[*] 测试单次召回...")
     engine = RecallEngine()
-    results = engine.recall("我想学习设计", conversation_id="test_001")
-    assert isinstance(results, list)
-    print(f"    召回结果数：{len(results)}")
-    for r in results[:3]:
+    ctx = engine.recall("我想学习设计", conversation_id="test_001")
+    assert isinstance(ctx.recalled_results, list)
+    print(f"    召回结果数：{len(ctx.recalled_results)}")
+    for r in ctx.recalled_results[:3]:
         print(f"    - {r.dimension_name}: score={r.score:.3f}")
     print("[+] 召回引擎单次测试通过")
 
@@ -56,8 +56,8 @@ def test_recall_multiple_queries():
     ]
     for q in queries:
         engine = RecallEngine()
-        results = engine.recall(q, conversation_id="test_002")
-        print(f"  query: {q[:15]}... -> {len(results)} 个维度")
+        ctx = engine.recall(q, conversation_id="test_002")
+        print(f"  query: {q[:15]}... -> {len(ctx.recalled_results)} 个维度")
 
 
 def main():
