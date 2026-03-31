@@ -3,26 +3,38 @@
 LocalMind Post-Hook
 对话后触发：分析对话并写入记忆
 
-OpenClaw 调用方式：
-  post_hook.py <conversation_id> <query> <response>
+OpenClaw 调用方式（通过 openclaw.json 配置）：
+{
+  "hooks": {
+    "post": {
+      "enabled": true,
+      "path": "/path/to/post_hook.py",
+      "args": ["--conversation", "{conversation}", "--conversation-id", "{conversation_id}"]
+    }
+  }
+}
+
+直接调用方式：
+  python3 post_hook.py --conversation "用户: 我想学设计\n助手: 好啊！" --conversation-id "conv_123"
 
 输出：
-  stdout: 状态 JSON（不影响 OpenClaw 主流程）
+  stdout: 状态摘要（不影响 OpenClaw 主流程）
   stderr: 日志
 """
 
 import sys
-import json
+import argparse
 import logging
-import os
+import json
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from localmind.config import config
 from localmind.db import Database
-from write import MemoryAnalyzer, MemoryWriter, MemoryUpdater
-from recall import CooccurrenceRecall
+from write.analyzer import MemoryAnalyzer
+from write.writer import MemoryWriter
+from recall.cooccurrence import CooccurrenceRecall
 
 logging.basicConfig(
     level=logging.INFO,
@@ -33,36 +45,31 @@ logger = logging.getLogger(__name__)
 
 
 def main():
+    parser = argparse.ArgumentParser(description="LocalMind Post-Hook - 写入对话记忆")
+    parser.add_argument("--conversation", type=str, required=True,
+                        help="完整对话文本（多轮，JSON字符串或纯文本）")
+    parser.add_argument("--conversation-id", type=str, default="default",
+                        help="对话 ID")
+    args = parser.parse_args()
+
+    conversation = args.conversation.strip()
+    conversation_id = args.conversation_id
+
+    if not conversation:
+        logger.info("空对话，跳过写入")
+        print("无需记录")
+        return
+
+    logger.info(f"写入分析开始: conv={conversation_id}, len={len(conversation)}")
+
     try:
-        # 解析参数
-        if len(sys.argv) >= 4:
-            conversation_id = sys.argv[1]
-            query = sys.argv[2]
-            response = sys.argv[3]
-        else:
-            conversation_id = "default"
-            query = ""
-            response = ""
-
-        if not query and not response:
-            logger.info("空对话，跳过写入")
-            print(json.dumps({"status": "skipped", "reason": "empty"}))
-            return
-
-        conversation = f"用户: {query}\n助手: {response}"
-        logger.info(f"写入分析开始: conv={conversation_id}, len={len(conversation)}")
-
         # 1. 分析对话
         analyzer = MemoryAnalyzer()
         analysis = analyzer.analyze(conversation)
 
-        if not analyzer.is_significant(analysis):
+        if not analysis.is_significant():
             logger.info(f"分析不显著，跳过写入: confidence={analysis.confidence}")
-            print(json.dumps({
-                "status": "skipped",
-                "reason": "not_significant",
-                "confidence": analysis.confidence,
-            }))
+            print("无需记录")
             return
 
         logger.info(f"分析结果: {len(analysis.records)} 条记录待写入")
@@ -87,22 +94,20 @@ def main():
             db = Database()
             db.add_conversation_history(
                 conversation_id=conversation_id,
-                query=query,
+                query=conversation[:200],  # 截断存储
                 recalled_dimensions=[r.dimension_id for r in analysis.records],
             )
         except Exception as e:
             logger.warning(f"对话历史记录失败: {e}")
 
-        print(json.dumps({
-            "status": "ok",
-            "records_written": len(written_ids),
-            "record_ids": written_ids,
-        }))
+        print(f"写入 {len(written_ids)} 条记忆")
+        logger.info(f"Post-hook 完成: {len(written_ids)} 条记录写入")
 
     except Exception as e:
         logger.error(f"Post-hook 执行失败: {e}")
-        print(json.dumps({"status": "error", "error": str(e)}))
-        sys.exit(0)
+        print("写入失败")
+        # graceful exit - 不影响主流程
+        print("")
 
 
 if __name__ == "__main__":

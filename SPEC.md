@@ -311,9 +311,139 @@ collection = client.get_or_create_collection(
 
 ---
 
-## 10. 未来扩展 (Phase 2+)
+## 10. OpenClaw Hook 集成（Phase 3）
 
-- Recall 引擎：语义 + 历史 + 热度 + 共现 + 空白检测
-- Write 引擎：LLM 分析 + 结构化提取
+### 10.1 Hook 机制说明
+
+OpenClaw 支持 Pre-Hook 和 Post-Hook 脚本，通过 `openclaw.json` 配置：
+
+```json
+{
+  "hooks": {
+    "pre": {
+      "enabled": true,
+      "path": "/home/ra001/clawd/LocalMind/hooks/pre_hook.py",
+      "args": ["--query", "{query}", "--conversation-id", "{conversation_id}"]
+    },
+    "post": {
+      "enabled": true,
+      "path": "/home/ra001/clawd/LocalMind/hooks/post_hook.py",
+      "args": ["--conversation", "{conversation}", "--conversation-id", "{conversation_id}"]
+    }
+  }
+}
+```
+
+**变量说明**：
+- `{query}` — 当前对话的用户输入
+- `{conversation}` — 完整对话历史（多轮 JSON 字符串）
+- `{conversation_id}` — 会话唯一 ID
+
+### 10.2 Hook 接口规格
+
+#### Pre-Hook (`pre_hook.py`)
+
+对话前执行，召回相关记忆，输出注入上下文。
+
+**CLI 参数**：
+```
+--query           当前对话查询（必填）
+--conversation-id 对话 ID（默认: "default"）
+```
+
+**输出**：
+- `stdout`: 注入 prompt（空或 `"[相关记忆]\n"` 时 OpenClaw 不注入）
+- `stderr`: 日志
+
+**示例**：
+```bash
+python3 hooks/pre_hook.py --query "我想学设计" --conversation-id "conv_123"
+```
+
+#### Post-Hook (`post_hook.py`)
+
+对话后执行，分析对话并写入记忆。
+
+**CLI 参数**：
+```
+--conversation    完整对话文本（必填，支持多轮 JSON 或纯文本）
+--conversation-id 对话 ID（默认: "default"）
+```
+
+**输出**：
+- `stdout`: 状态摘要（如 `"写入 3 条记忆"` 或 `"无需记录"`）
+- `stderr`: 日志
+
+**示例**：
+```bash
+python3 hooks/post_hook.py --conversation "用户: 我内向\n助手: 了解" --conversation-id "conv_123"
+```
+
+### 10.3 Hook 包装器
+
+`hooks/wrapper.sh` 提供简化的直接调用接口：
+
+```bash
+# Pre-hook
+./hooks/wrapper.sh pre "query text" "conv_id"
+
+# Post-hook
+./hooks/wrapper.sh post "用户: ...\n助手: ..." "conv_id"
+```
+
+### 10.4 OpenClaw 配置步骤
+
+1. 找到 OpenClaw 配置文件 `openclaw.json`
+2. 在 `hooks` 字段添加以上配置
+3. 重启 OpenClaw Gateway：`openclaw gateway restart`
+4. 验证 hooks 工作：`python3 hooks/pre_hook.py --query "test" --conversation-id "test"`
+
+### 10.5 行为约束
+
+- Pre-hook 输出为空或仅含 `"[相关记忆]"` 时，不注入（避免噪声）
+- Post-hook 执行失败时 `exit 0`（graceful，不影响主对话流程）
+- 所有异常捕获后打印到 stderr，不污染 stdout
+
+---
+
+## 11. 端到端测试（Phase 3）
+
+### 11.1 测试文件
+
+`tests/test_integration.py` — 完整 recall → write 生命周期测试
+
+### 11.2 运行方法
+
+```bash
+cd /home/ra001/clawd/LocalMind
+python3 tests/test_integration.py
+```
+
+### 11.3 测试用例
+
+| 测试函数 | 验证内容 |
+|---------|---------|
+| `test_pre_hook_recall_personality` | "我是一个内向的人" 召回 → identity.personality 被命中 |
+| `test_pre_hook_empty_query` | 空 query graceful 处理 |
+| `test_post_hook_significant_conversation` | 显著对话 → SQLite 记录数增加 |
+| `test_post_hook_trivial_conversation` | 闲聊对话不触发写入 |
+| `test_hook_cli_pre` | CLI 调用 pre_hook.py 返回码 0 |
+| `test_hook_cli_post` | CLI 调用 post_hook.py 返回码 0 |
+| `test_wrapper_script` | wrapper.sh pre/post 均返回码 0 |
+
+### 11.4 前置条件
+
+- Ollama 服务运行中（`http://localhost:11434`）
+- ChromaDB 已初始化（`data/chroma_db` 目录存在）
+- SQLite 数据库已初始化（`data/personal.db`）
+- Ollama 模型可用：`bge-m3:latest`（embedding）、`qwen2.5:7b`（LLM 分析）
+
+---
+
+## 12. 未来扩展 (Phase 2+)
+
+- Recall 引擎：语义 + 历史 + 热度 + 共现 + 空白检测 ✅（Phase 2）
+- Write 引擎：LLM 分析 + 结构化提取 ✅（Phase 2）
+- OpenClaw Hook 集成 ✅（Phase 3）
 - Web API：FastAPI 封装
 - 配置优化：排序公式参数可调
