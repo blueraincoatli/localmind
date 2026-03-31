@@ -1,0 +1,49 @@
+# 心理结构域 - Psychology Domain
+# 定义用户思维模式、情绪反应、决策倾向等心理相关维度
+
+domain: psychology
+domain_name: 心理结构
+description: 情绪模式、思维方式、心理偏好、决策倾向
+
+dimensions:
+  - id: psychology.thinking_mode
+    name: 思维方式
+    focus_prompt: |
+      判断：用户处理问题时表现出什么思维方式（分析型/直觉型、线性/发散型、逻辑/感性）？
+      提取具体的思维模式特征。
+
+  - id: psychology.decision_style
+    name: 决策风格
+    focus_prompt: |
+      判断：用户做决定时有什么特点（果断/犹豫、理性权衡/跟随直觉、风险偏好/规避）？
+      提取决策风格的具体表现。
+
+  - id: psychology.emotion_pattern
+    name: 情绪模式
+    focus_prompt: |
+      判断：用户在压力下或特定场景下的情绪反应模式是什么？
+      提取情绪触发条件和反应模式。
+
+  - id: psychology.stress_response
+    name: 压力应对方式
+    focus_prompt: |
+      判断：用户面对压力时通常如何应对（倾诉/独处/逃避/解决问题/情绪发泄）？
+      提取压力应对策略。
+
+  - id: psychology.motivation
+    name: 动机驱动因素
+    focus_prompt: |
+      判断：什么能激励用户？成就动机/归属动机/权力动机/自主动机？
+      提取核心动机类型。
+
+  - id: psychology.cognitive_bias
+    name: 认知偏好/偏见
+    focus_prompt: |
+      判断：用户在思考问题时有什么固化的认知倾向或偏见？
+      提取认知风格特点。
+
+  - id: psychology.learning_style
+    name: 学习风格
+    focus_prompt: |
+      判断：用户喜欢怎么学习新东西（视觉/听觉/动手、理论/实践、独自/讨论）？
+      提取学习风格偏好。

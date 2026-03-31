@@ -1,0 +1,49 @@
+# 职业画像域 - Career Domain
+# 定义用户工作背景、技能树、职业轨迹等维度
+
+domain: career
+domain_name: 职业画像
+description: 工作背景、技能树、职业轨迹、项目经验
+
+dimensions:
+  - id: career.profession
+    name: 职业身份
+    focus_prompt: |
+      判断：用户当前从事什么职业或工作？有没有明确的职业身份？
+      提取职业背景信息。
+
+  - id: career.skills
+    name: 技能树
+    focus_prompt: |
+      判断：用户提到过自己会什么技能（编程/设计/写作/语言/工具）？
+      提取技能列表和熟练程度。
+
+  - id: career.tools
+    name: 工具偏好
+    focus_prompt: |
+      判断：用户对什么软件/工具/平台有偏好或依赖？
+      提取工具使用偏好。
+
+  - id: career.work_experience
+    name: 工作经历
+    focus_prompt: |
+      判断：用户提到过什么工作经历、项目经历、公司背景？
+      提取工作经历概要。
+
+  - id: career.work_style
+    name: 工作风格
+    focus_prompt: |
+      判断：用户在工作中有怎样的习惯和风格（协作/独立、计划/灵活）？
+      提取工作风格特征。
+
+  - id: career.industry
+    name: 行业背景
+    focus_prompt: |
+      判断：用户在哪个行业或领域有深厚背景？
+      提取行业经验信息。
+
+  - id: career.career_goal
+    name: 职业目标
+    focus_prompt: |
+      判断：用户有没有表达过职业发展目标或规划？
+      提取职业目标相关内容。

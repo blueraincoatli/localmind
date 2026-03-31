@@ -1,0 +1,43 @@
+# 计划目标域 - Goals Domain
+# 定义用户想达成的目标、计划、愿望等维度
+
+domain: goals
+domain_name: 计划目标
+description: 短期/长期目标、待办事项、想做的事、想成为的人
+
+dimensions:
+  - id: goals.short_term
+    name: 短期目标
+    focus_prompt: |
+      判断：用户最近有什么计划或目标想实现（近1-3个月）？
+      提取短期目标内容。
+
+  - id: goals.long_term
+    name: 长期目标
+    focus_prompt: |
+      判断：用户有没有表达过长期人生目标或愿景（1年+）？
+      提取长期目标内容。
+
+  - id: goals.wishlist
+    name: 想做的事
+    focus_prompt: |
+      判断：用户有没有说过"我想做..."、"我在考虑..."、"有机会想..."？
+      提取想做事项列表。
+
+  - id: goals.ideal_self
+    name: 想成为的人
+    focus_prompt: |
+      判断：用户有没有表达过想成为什么样的人、有榜样吗？
+      提取理想自我描述。
+
+  - id: goals.project_plan
+    name: 项目计划
+    focus_prompt: |
+      判断：用户有没有在做或计划什么具体项目（产品/创作/学习）？
+      提取项目计划和进度。
+
+  - id: goals.milestone
+    name: 重要里程碑
+    focus_prompt: |
+      判断：用户有没有设立过重要截止日期或里程碑？
+      提取目标截止日期和里程碑。

@@ -1,0 +1,49 @@
+# 审美偏好域 - Aesthetics Domain
+# 定义用户视觉、听觉、设计等审美相关维度
+
+domain: aesthetics
+domain_name: 审美偏好
+description: 视觉、音乐、设计等审美倾向和品味
+
+dimensions:
+  - id: aesthetics.visual
+    name: 视觉审美
+    focus_prompt: |
+      判断：用户对视觉设计有什么明确的偏好（极简/繁复、暖色/冷色、简约/华丽）？
+      提取具体的视觉审美倾向。
+
+  - id: aesthetics.color_preference
+    name: 色彩偏好
+    focus_prompt: |
+      判断：用户明确表达过喜欢或讨厌什么颜色？有没有稳定的色彩偏好？
+      提取色彩偏好信息。
+
+  - id: aesthetics.music
+    name: 音乐品味
+    focus_prompt: |
+      判断：用户提到过喜欢什么类型的音乐、歌手、专辑、或表达过音乐相关偏好？
+      提取音乐品味特征。
+
+  - id: aesthetics.design_style
+    name: 设计风格偏好
+    focus_prompt: |
+      判断：用户对设计（平面/产品/空间）有什么风格偏好？
+      提取设计风格倾向。
+
+  - id: aesthetics.typography
+    name: 字体/排版偏好
+    focus_prompt: |
+      判断：用户对字体设计、排版风格有什么偏好或吐槽？
+      提取字体排版偏好。
+
+  - id: aesthetics.art_taste
+    name: 艺术品味
+    focus_prompt: |
+      判断：用户对艺术（绘画/摄影/电影/展览）有什么品味或见解？
+      提取艺术审美倾向。
+
+  - id: aesthetics.aesthetic_principle
+    name: 审美原则
+    focus_prompt: |
+      判断：用户有没有表达过自己的审美原则或标准？
+      提取审美判断标准。

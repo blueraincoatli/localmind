@@ -1,0 +1,43 @@
+# 日程节奏域 - Schedule Domain
+# 定义用户时间习惯、能量曲线、日程规律等维度
+
+domain: schedule
+domain_name: 日程节奏
+description: 日常规律、时间习惯、能量高低峰、作息模式
+
+dimensions:
+  - id: schedule.daily_rhythm
+    name: 日常作息
+    focus_prompt: |
+      判断：用户通常几点睡、几点起、作息规律吗？
+      提取作息习惯信息。
+
+  - id: schedule.energy_curve
+    name: 能量曲线
+    focus_prompt: |
+      判断：用户一天中什么时候精力最好、什么时候容易疲惫？
+      提取能量周期特点。
+
+  - id: schedule.work_time
+    name: 工作时间
+    focus_prompt: |
+      判断：用户通常什么时间工作/学习？周末一样吗？
+      提取工作节奏信息。
+
+  - id: schedule.time_allocation
+    name: 时间分配
+    focus_prompt: |
+      判断：用户通常把时间花在什么地方（工作/娱乐/运动/社交）？
+      提取时间分配偏好。
+
+  - id: schedule.productivity
+    name: 高效时段
+    focus_prompt: |
+      判断：用户什么时候效率最高？早上/下午/晚上？
+      提取生产力高峰时段。
+
+  - id: schedule.time_waste
+    name: 时间消耗习惯
+    focus_prompt: |
+      判断：用户有没有浪费时间在某些特定事情上的习惯？
+      提取时间消耗模式。

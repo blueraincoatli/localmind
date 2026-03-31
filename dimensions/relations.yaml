@@ -1,0 +1,55 @@
+# 关系网络域 - Relationships Domain
+# 定义用户人际关系、社交模式、重要联系人等维度
+
+domain: relations
+domain_name: 关系网络
+description: 人际关系、联系人信息、社交模式、在意的人
+
+dimensions:
+  - id: relations.family
+    name: 家庭关系
+    focus_prompt: |
+      判断：用户有没有提到过家人（父母/伴侣/孩子/兄弟姐妹）？关系如何？
+      提取家庭关系信息。
+
+  - id: relations.friends
+    name: 朋友关系
+    focus_prompt: |
+      判断：用户有没有提到过朋友、朋友圈子、社交圈？
+      提取朋友关系信息。
+
+  - id: relations.colleagues
+    name: 同事关系
+    focus_prompt: |
+      判断：用户有没有提到过同事、老板、工作关系？
+      提取职场关系信息。
+
+  - id: relations.mentor
+    name: 导师/榜样
+    focus_prompt: |
+      判断：用户有没有提到过欣赏的人、导师、榜样、偶像？
+      提取榜样信息。
+
+  - id: relations.social_style
+    name: 社交风格
+    focus_prompt: |
+      判断：用户在社交场合的表现如何（外向/内向、主动/被动、喜欢热闹/安静）？
+      提取社交风格。
+
+  - id: relations.important_person
+    name: 在意的人
+    focus_prompt: |
+      判断：用户有没有表达过对某些人的在意、牵挂、或关系重要性？
+      提取重要他人信息。
+
+  - id: relations.social_need
+    name: 社交需求
+    focus_prompt: |
+      判断：用户社交的频率和深度偏好（需要频繁社交/享受独处、深度交流/表面社交）？
+      提取社交需求模式。
+
+  - id: relations.relationship_goal
+    name: 关系目标
+    focus_prompt: |
+      判断：用户有没有在关系方面设立过目标（脱单/维护友谊/改善亲子关系）？
+      提取关系相关目标。

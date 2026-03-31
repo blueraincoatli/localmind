@@ -1,0 +1,43 @@
+# 身份认知域 - Identity Domain
+# 定义关于用户基本身份认知的维度
+
+domain: identity
+domain_name: 身份认知
+description: 用户是谁、基本信息、性格特点、自我认知
+
+dimensions:
+  - id: identity.name
+    name: 姓名/昵称
+    focus_prompt: |
+      判断：对话中是否提到了用户的真实姓名、昵称、网名、称呼偏好？
+      如果是，提取该名字或称呼。
+
+  - id: identity.basic_info
+    name: 基本信息
+    focus_prompt: |
+      判断：对话中是否透露了用户的基本背景信息（如年龄、职业、地域、教育背景等）？
+      如果有，提取这些信息。
+
+  - id: identity.personality
+    name: 性格特点
+    focus_prompt: |
+      判断：对话中是否反映了用户的性格特征（如外向/内向、理性/感性、谨慎/冒险等）？
+      如果有，描述这些性格特点。
+
+  - id: identity.self_perception
+    name: 自我认知
+    focus_prompt: |
+      判断：用户是否表达了对自己的认知（如"我是一个xxx样的人"、价值观、人生信条等）？
+      如果有，提取这些自我描述。
+
+  - id: identity.background
+    name: 成长背景
+    focus_prompt: |
+      判断：对话中是否提到了用户的成长经历、教育背景、重要人生节点？
+      如果有，提取相关内容。
+
+  - id: identity.identity_style
+    name: 身份表达风格
+    focus_prompt: |
+      判断：用户如何向他人介绍自己？喜欢强调什么身份标签？
+      提取用户的身份表达方式和偏好。

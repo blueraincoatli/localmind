@@ -1,0 +1,55 @@
+# 杂项偏好域 - Misc Preferences Domain
+# 定义无法归类到其他7大域的零散个人偏好
+
+domain: misc
+domain_name: 杂项偏好
+description: 饮食、运动、生活习惯、健康相关偏好
+
+dimensions:
+  - id: misc.diet
+    name: 饮食习惯
+    focus_prompt: |
+      判断：用户有没有特殊的饮食习惯或偏好（素食/过敏/口味偏好/常吃什么）？
+      提取饮食习惯信息。
+
+  - id: misc.exercise
+    name: 运动习惯
+    focus_prompt: |
+      判断：用户平时做什么运动？有没有喜欢的运动项目？
+      提取运动习惯信息。
+
+  - id: misc.health
+    name: 健康状况
+    focus_prompt: |
+      判断：用户有没有提到过健康问题、身体状况或运动目标？
+      提取健康相关信息。
+
+  - id: misc.living
+    name: 居住环境
+    focus_prompt: |
+      判断：用户有没有提到过住在哪里、生活环境偏好？
+      提取居住环境信息。
+
+  - id: misc.digital_habit
+    name: 数字生活习惯
+    focus_prompt: |
+      判断：用户使用手机/电脑/网络的习惯（重度用户/轻度、晚睡刷手机等）？
+      提取数字生活习惯。
+
+  - id: misc.consumption
+    name: 消费偏好
+    focus_prompt: |
+      判断：用户有没有表达过消费观或购物偏好（注重性价比/品质/体验）？
+      提取消费偏好信息。
+
+  - id: misc.hobby
+    name: 爱好/兴趣
+    focus_prompt: |
+      判断：用户除了工作还有什么爱好或打发时间的方式？
+      提取爱好列表。
+
+  - id: misc.pet
+    name: 宠物相关
+    focus_prompt: |
+      判断：用户有没有养宠物？提到过什么宠物？
+      提取宠物信息。
