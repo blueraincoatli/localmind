@@ -13,7 +13,7 @@ from recall.semantic import SemanticRecall
 from recall.history import HistoryRecall
 from recall.popularity import PopularityRecall
 from recall.cooccurrence import CooccurrenceRecall
-from recall.gaps import GapsRecall
+from recall.gaps import GapDetector
 
 
 def test_imports():
@@ -23,7 +23,7 @@ def test_imports():
     assert HistoryRecall is not None
     assert PopularityRecall is not None
     assert CooccurrenceRecall is not None
-    assert GapsRecall is not None
+    assert GapDetector is not None
     print("[+] 所有召回模块导入成功")
 
 
@@ -31,7 +31,7 @@ def test_recall_engine_init():
     print("[*] 测试召回引擎初始化...")
     engine = RecallEngine()
     assert engine is not None
-    assert engine.config is not None
+    assert engine.db is not None
     print("[+] 召回引擎初始化成功")
 
 
