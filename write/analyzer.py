@@ -15,9 +15,8 @@ from localmind.prompts import build_memory_extraction_prompt
 logger = logging.getLogger(__name__)
 
 
-def llm_generate(prompt: str, model: Optional[str] = None) -> str:
-    """调用 Ollama LLM 生成文本"""
-    model = model or "qwen2.5:7b"
+def llm_ollama(prompt: str, model: str) -> str:
+    """调用本地 Ollama LLM"""
     try:
         response = requests.post(
             f"{config.ollama_base}/api/generate",
@@ -34,8 +33,51 @@ def llm_generate(prompt: str, model: Optional[str] = None) -> str:
         logger.warning("[MemoryAnalyzer] Ollama 连接失败（服务可能未启动）")
         return ""
     except Exception as e:
-        logger.error(f"[MemoryAnalyzer] LLM 生成失败: {e}")
+        logger.error(f"[MemoryAnalyzer] Ollama LLM 调用失败: {e}")
         return ""
+
+
+def llm_deepseek(prompt: str, model: str) -> str:
+    """调用 DeepSeek API"""
+    api_key = config.deepseek_api_key
+    if not api_key:
+        logger.warning("[MemoryAnalyzer] DeepSeek API Key 未配置")
+        return ""
+    
+    try:
+        response = requests.post(
+            "https://api.deepseek.com/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": model or config.deepseek_model,
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.1,
+            },
+            timeout=60,
+        )
+        response.raise_for_status()
+        return response.json()["choices"][0]["message"]["content"]
+    except Exception as e:
+        logger.error(f"[MemoryAnalyzer] DeepSeek API 调用失败: {e}")
+        return ""
+
+
+def llm_generate(prompt: str, model: Optional[str] = None) -> str:
+    """根据配置调用 LLM（Ollama 或 DeepSeek）"""
+    provider = config.llm_provider
+    
+    if provider == "ollama":
+        model = model or config.ollama_model
+        return llm_ollama(prompt, model)
+    elif provider == "deepseek":
+        # DeepSeek 使用配置的模型，不接受外部传入的 Ollama 模型名
+        return llm_deepseek(prompt, config.deepseek_model)
+    else:
+        logger.warning(f"[MemoryAnalyzer] 未知的 LLM provider: {provider}，使用 Ollama")
+        return llm_ollama(prompt, model or config.ollama_model)
 
 
 def llm_json(prompt: str, model: Optional[str] = None) -> dict:
@@ -70,14 +112,21 @@ class MemoryAnalyzer:
     """
 
     def __init__(self, model: Optional[str] = None):
-        self.model = model or "qwen2.5:7b"
+        # 如果没指定模型，根据 provider 使用各自默认值
+        if model:
+            self.model = model
+        elif config.llm_provider == "deepseek":
+            self.model = config.deepseek_model
+        else:
+            self.model = config.ollama_model
 
-    def analyze(self, conversation: str) -> WriteAnalysis:
+    def analyze(self, conversation: str, conversation_id: Optional[str] = None) -> WriteAnalysis:
         """
         分析对话，提取值得记忆的信息
 
         Args:
             conversation: 对话文本
+            conversation_id: 可选的对话 ID，用于溯源
 
         Returns:
             WriteAnalysis 结果
@@ -102,11 +151,20 @@ class MemoryAnalyzer:
         records = []
         for r in result.get("records", []):
             try:
+                # 构建 evidence，溯源信息优先
+                ev_parts = []
+                if conversation_id:
+                    ev_parts.append(f"conversation_id: {conversation_id}")
+                orig_evidence = r.get("evidence")
+                if orig_evidence:
+                    ev_parts.append(orig_evidence)
+                evidence = "\n".join(ev_parts) if ev_parts else None
+
                 records.append(
                     MemoryRecord(
                         dimension_id=r["dimension_id"],
                         content=r["content"],
-                        evidence=r.get("evidence"),
+                        evidence=evidence,
                         confidence=r.get("confidence", confidence),
                     )
                 )
