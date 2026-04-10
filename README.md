@@ -29,7 +29,7 @@
 
 ```bash
 # 安装 Python 依赖
-pip install chromadb requests pyyaml
+pip install chromadb requests pyyaml fastapi uvicorn
 
 # 安装 Ollama
 curl -fsSL https://ollama.com/install.sh | sh
@@ -42,6 +42,10 @@ ollama pull qwen2.5:7b  # 或其他 LLM
 ### 2. 初始化
 
 ```bash
+# 可选：给开发机使用独立数据目录，避免和部署机数据混用
+# Windows PowerShell:
+$env:LOCALMIND_DATA_DIR="D:\localmind\data_dev"
+
 # 初始化数据库
 python scripts/init_db.py
 
@@ -57,7 +61,31 @@ python scripts/setup_chromadb.py
 ```bash
 python tests/test_db.py
 python tests/test_dimensions.py
+python tests/test_backfill.py
 ```
+
+### 4. 历史数据回填
+
+当你重建 `data/` 或想重新清洗旧对话时，可以用回填脚本重新提取结构化记忆和 verbatim：
+
+```bash
+# 从单个文件回填
+python scripts/backfill_memories.py --input exports/chat_history.json
+
+# 从目录批量回填
+python scripts/backfill_memories.py --input exports/conversations --recursive
+
+# 从数据库 records.raw_snippet 回灌
+python scripts/backfill_memories.py --from-db-raw-snippets
+```
+
+### 5. Web API
+
+```bash
+uvicorn api.main:app --reload
+```
+
+默认文档地址：`http://localhost:8000/docs`
 
 ## 项目结构
 

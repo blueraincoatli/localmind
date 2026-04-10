@@ -1,6 +1,6 @@
 """
-记忆写入模块
-双重写入：SQLite（db.py）+ ChromaDB（vector_store.py）
+记忆写入模块 (Phase 6)
+三重写入：SQLite + ChromaDB + Verbatim（原始对话）
 """
 
 import logging
@@ -9,6 +9,7 @@ from typing import List, Optional
 from localmind.config import config
 from localmind.db import Database
 from localmind.vector_store import VectorStore
+from localmind.verbatim_store import VerbatimStore
 from localmind.models import MemoryRecord, WriteAnalysis
 
 logger = logging.getLogger(__name__)
@@ -16,16 +17,23 @@ logger = logging.getLogger(__name__)
 
 class MemoryWriter:
     """
-    记忆写入器 - 双重写入 SQLite + ChromaDB
+    记忆写入器 - 三重写入 SQLite + ChromaDB + Verbatim
+    
+    Phase 6 更新：
+    - 支持 verbatim 原始对话存储
+    - 可配置 enable_verbatim_storage
     """
 
     def __init__(
         self,
         db: Optional[Database] = None,
         vector_store: Optional[VectorStore] = None,
+        verbatim_store: Optional[VerbatimStore] = None,
     ):
         self.db = db or Database()
         self.vector_store = vector_store or VectorStore()
+        self.verbatim_store = verbatim_store or VerbatimStore()
+        self.enable_verbatim = getattr(config, 'enable_verbatim_storage', True)
 
     def write(self, record: MemoryRecord) -> bool:
         """
@@ -110,3 +118,74 @@ class MemoryWriter:
             if self.write(record):
                 written_ids.append(record.id)
         return written_ids
+    
+    def write_verbatim(self, conversation: str, source: str = "",
+                       conversation_id: Optional[str] = None) -> List[str]:
+        """
+        写入原始对话（verbatim）
+        
+        Phase 6：存储原始对话片段，作为结构化记忆的 fallback
+        
+        Args:
+            conversation: 对话文本
+            source: 来源标识
+            conversation_id: 对话 ID
+            
+        Returns:
+            存储的 embedding_id 列表
+        """
+        if not self.enable_verbatim:
+            logger.debug("[MemoryWriter] Verbatim 存储已禁用")
+            return []
+        
+        try:
+            embedding_ids = self.verbatim_store.store_conversation(
+                conversation=conversation,
+                source=source or conversation_id or "unknown"
+            )
+            logger.info(f"[MemoryWriter] Verbatim 存储: {len(embedding_ids)} 个片段 "
+                       f"source={source}")
+            return embedding_ids
+        except Exception as e:
+            logger.error(f"[MemoryWriter] Verbatim 存储失败: {e}")
+            return []
+    
+    def write_analysis_with_verbatim(self, analysis: WriteAnalysis,
+                                     conversation: str,
+                                     conversation_id: Optional[str] = None) -> dict:
+        """
+        同时写入结构化记忆和 verbatim 原始对话
+        
+        Args:
+            analysis: LLM 分析结果
+            conversation: 原始对话文本
+            conversation_id: 对话 ID
+            
+        Returns:
+            写入结果统计
+        """
+        result = {
+            "structured_ids": [],
+            "verbatim_ids": [],
+            "success": False
+        }
+        
+        # 1. 写入结构化记忆
+        if analysis.is_significant():
+            result["structured_ids"] = self.write_analysis(analysis)
+        
+        # 2. 写入 verbatim
+        result["verbatim_ids"] = self.write_verbatim(
+            conversation=conversation,
+            conversation_id=conversation_id
+        )
+        
+        result["success"] = len(result["structured_ids"]) > 0 or len(result["verbatim_ids"]) > 0
+        
+        logger.info(
+            f"[MemoryWriter] 混合写入: "
+            f"structured={len(result['structured_ids'])}, "
+            f"verbatim={len(result['verbatim_ids'])}"
+        )
+        
+        return result

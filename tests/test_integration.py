@@ -166,7 +166,13 @@ def test_hook_cli_post():
 
 
 def test_wrapper_script():
-    """测试7: wrapper.sh 调用"""
+    """测试7: wrapper.sh 调用 (跳过 Windows)"""
+    import sys
+    if sys.platform == "win32":
+        print("[*] 测试7: wrapper.sh 调用... (Windows 跳过)")
+        print("    跳过: Windows 不支持 bash wrapper")
+        return
+    
     print("[*] 测试7: wrapper.sh 调用...")
     result = subprocess.run(
         ["bash", str(project_root / "hooks" / "wrapper.sh"),
@@ -207,7 +213,7 @@ def main():
     test_wrapper_script()
 
     print("\n" + "=" * 60)
-    print("✅ 所有集成测试通过！")
+    print("所有集成测试通过！")
     print("=" * 60)
 
 

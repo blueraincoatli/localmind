@@ -5,15 +5,18 @@ LocalMind 数据库初始化脚本
 """
 
 import sqlite3
-import os
 import yaml
 from pathlib import Path
-from datetime import datetime
+import sys
 
 # 项目根目录
 PROJECT_ROOT = Path(__file__).parent.parent
-DB_PATH = PROJECT_ROOT / "data" / "personal.db"
-DIMENSIONS_DIR = PROJECT_ROOT / "dimensions"
+sys.path.insert(0, str(PROJECT_ROOT))
+
+from localmind.config import config
+
+DB_PATH = config.db_path
+DIMENSIONS_DIR = config.dimensions_dir
 
 
 def ensure_dir(path: Path) -> None:
@@ -93,6 +96,29 @@ def init_schema(conn: sqlite3.Connection) -> None:
         )
     """)
     
+    # 关键事实表（L0/L1 层）- Phase 4 新增
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS critical_facts (
+            id TEXT PRIMARY KEY,
+            fact_type TEXT NOT NULL,  -- 'identity' | 'critical'
+            content TEXT NOT NULL,
+            priority INTEGER DEFAULT 0,
+            source_record_id TEXT,    -- 关联的 records.id
+            created_at INTEGER DEFAULT (strftime('%s', 'now')),
+            updated_at INTEGER DEFAULT (strftime('%s', 'now'))
+        )
+    """)
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_critical_facts_type ON critical_facts(fact_type)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_critical_facts_priority ON critical_facts(priority)")
+    
+    # 添加 records 表的 verbatim 字段 - Phase 4 新增
+    try:
+        cursor.execute("ALTER TABLE records ADD COLUMN raw_snippet TEXT")
+        print("[+] 添加 raw_snippet 字段到 records 表")
+    except sqlite3.OperationalError:
+        # 字段已存在
+        pass
+    
     conn.commit()
     print("[+] 数据库 schema 初始化完成")
 
@@ -130,7 +156,7 @@ def print_stats(conn: sqlite3.Connection) -> None:
     
     # 维度统计
     cursor.execute("SELECT domain, domain_name, COUNT(*) FROM dimensions GROUP BY domain")
-    print("\n📊 维度统计：")
+    print("\nDimension stats:")
     print(f"{'域':<15} {'维度数':<8}")
     print("-" * 25)
     for row in cursor.fetchall():
@@ -139,7 +165,7 @@ def print_stats(conn: sqlite3.Connection) -> None:
     # 总记录数
     cursor.execute("SELECT COUNT(*) FROM records")
     total_records = cursor.fetchone()[0]
-    print(f"\n📊 当前记忆记录数：{total_records}")
+    print(f"\nCurrent record count: {total_records}")
 
 
 def main():
@@ -164,7 +190,7 @@ def main():
     print_stats(conn)
     
     conn.close()
-    print("\n✅ 初始化完成！")
+    print("\nInitialization complete.")
 
 
 if __name__ == "__main__":

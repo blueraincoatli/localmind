@@ -5,6 +5,7 @@ LocalMind 数据库操作模块
 
 import sqlite3
 import json
+import re
 from pathlib import Path
 from typing import Optional, List, Dict, Any, Tuple
 from dataclasses import dataclass
@@ -20,6 +21,7 @@ class Record:
     dimension_id: str
     content: str
     evidence: Optional[str] = None
+    raw_snippet: Optional[str] = None
     confidence: float = 0.5
     created_at: Optional[int] = None
     last_used_at: Optional[int] = None
@@ -171,6 +173,13 @@ class Database:
             "SELECT * FROM records ORDER BY last_used_at DESC LIMIT ?",
             (limit,)
         )
+        return [Record(**dict(row)) for row in cursor.fetchall()]
+
+    def get_all_records(self) -> List[Record]:
+        """获取全部记录。"""
+        conn = self.connect()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM records ORDER BY created_at DESC")
         return [Record(**dict(row)) for row in cursor.fetchall()]
     
     def increment_record_usage(self, record_id: str) -> None:

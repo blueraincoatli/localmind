@@ -5,9 +5,11 @@
 
 import json
 import logging
+import re
 import requests
 from typing import Optional
 
+from localmind.db import Database
 from localmind.config import config
 from localmind.models import MemoryRecord, WriteAnalysis
 from localmind.prompts import build_memory_extraction_prompt
@@ -119,6 +121,9 @@ class MemoryAnalyzer:
             self.model = config.deepseek_model
         else:
             self.model = config.ollama_model
+        self.db = Database()
+        self._dimensions = self.db.get_all_dimensions()
+        self._dimension_ids = {d.id for d in self._dimensions}
 
     def analyze(self, conversation: str, conversation_id: Optional[str] = None) -> WriteAnalysis:
         """
@@ -131,7 +136,7 @@ class MemoryAnalyzer:
         Returns:
             WriteAnalysis 结果
         """
-        prompt = build_memory_extraction_prompt(conversation)
+        prompt = build_memory_extraction_prompt(conversation, self._dimensions)
 
         try:
             result = llm_json(prompt, model=self.model)
@@ -151,6 +156,14 @@ class MemoryAnalyzer:
         records = []
         for r in result.get("records", []):
             try:
+                dimension_id = self._normalize_dimension_id(
+                    str(r.get("dimension_id", "")),
+                    str(r.get("content", "")),
+                )
+                if not dimension_id:
+                    logger.warning(f"[MemoryAnalyzer] 跳过无效维度: {r.get('dimension_id')}")
+                    continue
+
                 # 构建 evidence，溯源信息优先
                 ev_parts = []
                 if conversation_id:
@@ -162,7 +175,7 @@ class MemoryAnalyzer:
 
                 records.append(
                     MemoryRecord(
-                        dimension_id=r["dimension_id"],
+                        dimension_id=dimension_id,
                         content=r["content"],
                         evidence=evidence,
                         confidence=r.get("confidence", confidence),
@@ -181,3 +194,41 @@ class MemoryAnalyzer:
     def is_significant(self, analysis: WriteAnalysis) -> bool:
         """判断分析结果是否显著值得记录"""
         return analysis.is_significant()
+
+    def _normalize_dimension_id(self, raw_dimension_id: str, content: str) -> Optional[str]:
+        """将 LLM 输出的维度 ID 归一化到已定义维度。"""
+        dim_id = raw_dimension_id.strip().lower()
+        if dim_id in self._dimension_ids:
+            return dim_id
+
+        content_lc = content.strip().lower()
+        alias_map = {
+            "personal_info.identity": "identity.basic_info",
+            "personal_info.name": "identity.name",
+            "personal_info.profile": "identity.basic_info",
+            "preference.design": "aesthetics.design_style",
+            "preference.design_style": "aesthetics.design_style",
+            "preference.visual": "aesthetics.visual",
+            "activity.learning": "goals.short_term",
+            "interest.current_learning": "goals.short_term",
+            "personality.traits": "identity.personality",
+            "personality.social_preference": "identity.personality",
+            "identity.profession": "career.profession",
+        }
+        if dim_id in alias_map:
+            return alias_map[dim_id]
+
+        if any(token in dim_id for token in ("name", "nickname")) or re.search(r"\b(i am|i'm|my name is)\b", content_lc):
+            return "identity.name"
+        if "profession" in dim_id or any(word in content_lc for word in ("设计师", "工程师", "产品经理", "designer", "developer")):
+            return "career.profession"
+        if "skill" in dim_id or any(word in content_lc for word in ("python", "编程", "设计", "写作", "工具")):
+            return "career.skills"
+        if "design" in dim_id or "aesthetic" in dim_id or any(word in content_lc for word in ("极简", "简约", "风格", "配色", "排版")):
+            return "aesthetics.design_style"
+        if "personality" in dim_id or any(word in content_lc for word in ("内向", "外向", "独处", "社交", "性格")):
+            return "identity.personality"
+        if "goal" in dim_id or "learning" in dim_id or any(word in content_lc for word in ("学习", "目标", "计划", "想要")):
+            return "goals.short_term"
+
+        return None

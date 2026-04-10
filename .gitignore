@@ -64,6 +64,9 @@ venv.bak/
 # Data (keep small test DB, ignore chroma)
 data/
 # !data/personal.db
+data_dev/
+data_bench/
+temp_test_backfill/
 
 # OS
 .DS_Store

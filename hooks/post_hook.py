@@ -67,17 +67,27 @@ def main():
         analyzer = MemoryAnalyzer()
         analysis = analyzer.analyze(conversation)
 
-        if not analysis.is_significant():
-            logger.info(f"分析不显著，跳过写入: confidence={analysis.confidence}")
-            print("无需记录")
-            return
-
-        logger.info(f"分析结果: {len(analysis.records)} 条记录待写入")
-
-        # 2. 写入记忆
+        # 2. 写入记忆（结构化 + verbatim）
         writer = MemoryWriter()
-        written_ids = writer.write_analysis(analysis)
-        logger.info(f"写入完成: {len(written_ids)} 条")
+        
+        if analysis.is_significant():
+            logger.info(f"分析结果: {len(analysis.records)} 条记录待写入")
+            # Phase 6：同时写入结构化和 verbatim
+            result = writer.write_analysis_with_verbatim(
+                analysis=analysis,
+                conversation=conversation,
+                conversation_id=conversation_id
+            )
+            structured_count = len(result["structured_ids"])
+            verbatim_count = len(result["verbatim_ids"])
+            logger.info(f"写入完成: structured={structured_count}, verbatim={verbatim_count}")
+            written_ids = result["structured_ids"]
+        else:
+            # 分析不显著，但仍存储 verbatim 作为 fallback
+            logger.info(f"分析不显著，仅存储 verbatim: confidence={analysis.confidence}")
+            verbatim_ids = writer.write_verbatim(conversation, conversation_id=conversation_id)
+            written_ids = []
+            logger.info(f"Verbatim 存储: {len(verbatim_ids)} 个片段")
 
         # 3. 更新共现关系
         if written_ids:

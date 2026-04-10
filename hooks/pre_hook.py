@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-LocalMind Pre-Hook
-对话前触发：召回相关记忆，生成注入上下文
+LocalMind Pre-Hook (Phase 4)
+对话前触发：分层唤醒 + 深度召回
 
 OpenClaw 调用方式（通过 openclaw.json 配置）：
 {
@@ -16,6 +16,7 @@ OpenClaw 调用方式（通过 openclaw.json 配置）：
 
 直接调用方式：
   python3 pre_hook.py --query "我想学设计" --conversation-id "conv_123"
+  python3 pre_hook.py --query "我想学设计" --quick  # 仅分层唤醒，不深度召回
 
 输出：
   stdout: 注入上下文的 prompt 字符串（空则无输出）
@@ -42,9 +43,10 @@ logger = logging.getLogger(__name__)
 
 
 def main():
-    parser = argparse.ArgumentParser(description="LocalMind Pre-Hook - 召回相关记忆")
+    parser = argparse.ArgumentParser(description="LocalMind Pre-Hook - 分层唤醒 + 深度召回")
     parser.add_argument("--query", type=str, required=True, help="当前对话查询")
     parser.add_argument("--conversation-id", type=str, default="default", help="对话 ID")
+    parser.add_argument("--quick", action="store_true", help="仅使用分层唤醒（更快）")
     args = parser.parse_args()
 
     query = args.query.strip()
@@ -57,23 +59,31 @@ def main():
     logger.info(f"召回开始: conversation_id={conversation_id}, query={query[:50]}...")
 
     try:
-        # 执行召回
         engine = RecallEngine()
-        ctx = engine.recall(
-            query=query,
-            conversation_id=conversation_id,
-            top_k=config.recall_top_k,
-        )
+        
+        if args.quick:
+            # 快速模式：仅分层唤醒（~200 tokens，<100ms）
+            wake_ctx = engine.wake_up(query, conversation_id)
+            injection = wake_ctx.to_prompt(include_l2=config.l2_enable)
+            logger.info(f"快速唤醒: {wake_ctx.total_tokens} tokens")
+        else:
+            # 完整模式：分层唤醒 + 深度召回
+            wake_ctx, full_ctx = engine.recall_with_wake(
+                query=query,
+                conversation_id=conversation_id,
+                top_k=config.recall_top_k,
+            )
+            injection = engine.build_layered_prompt(wake_ctx, full_ctx)
+            logger.info(
+                f"分层+深度召回: wake={wake_ctx.total_tokens}t, "
+                f"deep={len(full_ctx.recalled_results)}dims"
+            )
 
-        # 构建注入 prompt
-        injection = ctx.to_injection_prompt()
-
-        if injection and injection.strip() not in ("", "[相关记忆]", "[相关记忆]\n", "[相关记忆]\n\n"):
+        if injection and injection.strip():
             print(injection)
-            logger.info(f"召回成功: {len(ctx.recalled_results)} 维度")
+            logger.info(f"召回成功，注入 {len(injection)} 字符")
         else:
             logger.info("无相关记忆")
-            # 输出空，不注入无用内容
             print("")
 
     except Exception as e:
