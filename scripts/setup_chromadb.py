@@ -36,16 +36,12 @@ def init_chromadb(persist_dir: Path) -> bool:
     """初始化 ChromaDB"""
     try:
         import chromadb
-        from chromadb.config import Settings
-        
+                
         # 创建持久化目录
         persist_dir.mkdir(parents=True, exist_ok=True)
         
-        # 初始化 ChromaDB 客户端
-        client = chromadb.Client(Settings(
-            persist_directory=str(persist_dir),
-            anonymized_telemetry=False
-        ))
+        # 初始化 ChromaDB 客户端（使用 PersistentClient 实现持久化）
+        client = chromadb.PersistentClient(path=str(persist_dir))
         
         # 创建或获取 collection
         collection = client.get_or_create_collection(

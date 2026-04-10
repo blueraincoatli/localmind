@@ -22,14 +22,10 @@ class VectorStore:
         """获取 ChromaDB 客户端"""
         if self._client is None:
             import chromadb
-            from chromadb.config import Settings
             
             self.persist_dir.mkdir(parents=True, exist_ok=True)
             
-            self._client = chromadb.Client(Settings(
-                persist_directory=str(self.persist_dir),
-                anonymized_telemetry=False
-            ))
+            self._client = chromadb.PersistentClient(path=str(self.persist_dir))
         return self._client
     
     def get_collection(self):

@@ -26,9 +26,19 @@ class Config:
     # 维度定义目录
     dimensions_dir: Path = field(init=False)
     
+    # Embedding 模型（Ollama）
+    embed_model: str = "bge-m3:latest"
+    
+    # LLM Provider: "ollama" 或 "deepseek"
+    llm_provider: str = "deepseek"
+    
     # Ollama 配置
     ollama_base: str = "http://localhost:11434"
-    embed_model: str = "bge-m3:latest"
+    ollama_model: str = "qwen2.5:7b"
+    
+    # DeepSeek 配置
+    deepseek_api_key: str = ""
+    deepseek_model: str = "deepseek-chat"
     
     # 召回参数
     recall_top_k: int = 5
@@ -45,6 +55,11 @@ class Config:
         self.db_path = self.data_dir / "personal.db"
         self.chroma_path = self.data_dir / "chroma_db"
         self.dimensions_dir = self.project_root / "dimensions"
+        
+        # 从环境变量读取 DeepSeek API Key
+        import os as _os
+        if not self.deepseek_api_key:
+            self.deepseek_api_key = _os.environ.get("DEEPSEEK_API_KEY", "")
     
     def ensure_dirs(self):
         """确保所有目录存在"""

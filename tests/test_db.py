@@ -49,6 +49,11 @@ def test_record_operations():
     test_id = "test_record_001"
     dim_id = "identity.name"
     
+    # 清理旧数据（确保测试隔离）
+    conn = db.connect()
+    conn.execute("DELETE FROM records WHERE id = ?", (test_id,))
+    conn.commit()
+    
     # 添加测试记录
     success = db.add_record(
         record_id=test_id,
